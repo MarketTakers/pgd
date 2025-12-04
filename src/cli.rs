@@ -21,12 +21,10 @@ pub struct Cli {
 
 #[derive(Clone, clap::ValueEnum)]
 pub enum ConnectionFormat {
-    /// Human-readable text format
-    Text,
-    /// JSON format
-    Json,
-    /// Environment variable format
-    Env,
+    /// DSN Url
+    DSN,
+    // Human readable format
+    Human,
 }
 
 #[derive(Subcommand)]

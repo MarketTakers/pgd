@@ -2,10 +2,7 @@ mod cli;
 mod config;
 mod state;
 
-mod consts {
-    pub const USERNAME: &str = "postgres";
-    pub const DATABASE: &str = "postgres";
-}
+mod consts;
 
 mod controller;
 
@@ -14,7 +11,10 @@ use cli::Cli;
 use miette::Result;
 use tracing::info;
 
-use crate::controller::Controller;
+use crate::{
+    cli::ControlCommands,
+    controller::{Context, Controller},
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -24,18 +24,26 @@ async fn main() -> Result<()> {
     init_tracing(cli.verbose);
 
     info!("pgd.start");
-    let controller = Controller::new().await?;
 
     match cli.command {
-        cli::Commands::Init => controller.init_project().await?,
-        cli::Commands::Instance { name, cmd } => todo!(),
+        cli::Commands::Init => {
+            let ctx = Context::new(None).await?;
+            Controller::new(ctx).init_project().await?;
+        }
+        cli::Commands::Instance { name, cmd } => match cmd {
+            ControlCommands::Start => {}
+            ControlCommands::Stop => {}
+            ControlCommands::Restart => {}
+            ControlCommands::Destroy => {}
+            ControlCommands::Logs { follow } => todo!(),
+            ControlCommands::Status => {}
+            ControlCommands::Connection { format: _ } => {}
+        },
     }
 
     Ok(())
 }
 
-fn init_tracing(verbose: bool) {
-    
-
+fn init_tracing(_verbose: bool) {
     tracing_subscriber::fmt::init();
 }

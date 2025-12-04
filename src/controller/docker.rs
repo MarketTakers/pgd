@@ -1,15 +1,17 @@
-use miette::miette;
-use std::str::FromStr;
+use miette::{Diagnostic, miette};
+use std::{io::Write, str::FromStr};
+use thiserror::Error;
 
 use bollard::{
     Docker,
     query_parameters::{
         CreateContainerOptions, CreateImageOptions, InspectContainerOptions, ListImagesOptions,
-        StartContainerOptions, StopContainerOptions,
+        LogsOptions, StartContainerOptions, StopContainerOptions,
     },
     secret::ContainerCreateBody,
 };
 use colored::Colorize;
+use futures::StreamExt;
 use indicatif::MultiProgress;
 use miette::{Context, IntoDiagnostic, Result};
 use tracing::info;
@@ -25,6 +27,11 @@ const DOCKERHUB_POSTGRES: &str = "postgres";
 fn format_image(ver: &PostgresVersion) -> String {
     format!("{DOCKERHUB_POSTGRES}:{}", ver)
 }
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("Docker operation failed")]
+#[diagnostic(code(pgd::docker))]
+pub enum Error {}
 
 pub struct DockerController {
     daemon: Docker,
@@ -261,5 +268,32 @@ impl DockerController {
 
         PostgresVersion::from_str(version_str)
             .map_err(|_| miette!("Invalid version in label: {}", version_str))
+    }
+
+    pub async fn stream_logs(&self, container_id: &str, follow: bool) -> Result<()> {
+        let options = Some(LogsOptions {
+            follow,
+            stdout: true,
+            stderr: true,
+            ..Default::default()
+        });
+
+        let mut logs = self.daemon.logs(container_id, options);
+
+        while let Some(entry) = logs.next().await {
+            match entry {
+                Ok(output) => {
+                    print!("{output}");
+                    std::io::stdout().flush().ok();
+                }
+                Err(err) => {
+                    return Err(err)
+                        .into_diagnostic()
+                        .wrap_err("Failed to stream container logs");
+                }
+            }
+        }
+
+        Ok(())
     }
 }
