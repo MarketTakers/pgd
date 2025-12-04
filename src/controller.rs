@@ -97,17 +97,33 @@ impl Controller {
             .is_container_running_by_id(&container_id)
             .await?
         {
+            println!("Container is already running");
             return Ok(());
         }
 
-        println!("Starting container...");
+        use indicatif::{ProgressBar, ProgressStyle};
+
+        let spinner = ProgressBar::new_spinner();
+        spinner.set_style(
+            ProgressStyle::default_spinner()
+                .template("{spinner:.green} {msg}")
+                .unwrap(),
+        );
+        spinner.set_message("Starting container...");
 
         for attempt in 1..=MAX_RETRIES {
-            let result = self.try_starting_container(&container_id, attempt).await;
+            spinner.set_message(format!("Starting container (attempt {}/{})", attempt, MAX_RETRIES));
+
+            let result = self.try_starting_container(&container_id, attempt, &spinner).await;
 
             match result {
-                Ok(_) => return Ok(()),
-                Err(err) => println!("Error: {:#?}", err),
+                Ok(_) => {
+                    spinner.finish_with_message("Container started successfully");
+                    return Ok(());
+                }
+                Err(err) => {
+                    spinner.set_message(format!("Attempt {}/{} failed: {}", attempt, MAX_RETRIES, err));
+                }
             }
 
             if attempt < MAX_RETRIES {
@@ -115,6 +131,7 @@ impl Controller {
             }
         }
 
+        spinner.finish_with_message("Failed to start container");
         miette::bail!("Failed to start container after {} attempts", MAX_RETRIES)
     }
 
@@ -122,30 +139,35 @@ impl Controller {
         &self,
         container_id: &String,
         attempt: u32,
+        spinner: &indicatif::ProgressBar,
     ) -> Result<(), miette::Error> {
         match self.docker.start_container_by_id(container_id).await {
             Ok(_) => {
-                tokio::time::sleep(tokio::time::Duration::from_secs(VERIFY_DURATION_SECS)).await;
+                spinner.set_message(format!(
+                    "Verifying container is running ({}s)...",
+                    VERIFY_DURATION_SECS
+                ));
+
+                for i in 0..VERIFY_DURATION_SECS {
+                    spinner.set_message(format!(
+                        "Verifying container stability ({}/{}s)",
+                        i + 1,
+                        VERIFY_DURATION_SECS
+                    ));
+                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                    spinner.tick();
+                }
 
                 if self.docker.is_container_running_by_id(container_id).await? {
-                    println!("Container started successfully and verified running");
-
                     return Ok(());
                 } else {
-                    println!(
-                        "Container stopped unexpectedly after start (attempt {}/{})",
-                        attempt, MAX_RETRIES
-                    );
+                    miette::bail!("Container stopped unexpectedly after start");
                 }
             }
             Err(e) => {
-                println!(
-                    "Failed to start container (attempt {}/{}): {}",
-                    attempt, MAX_RETRIES, e
-                );
+                miette::bail!("Failed to start: {}", e);
             }
-        };
-        Ok(())
+        }
     }
 
     async fn update_project_container(
