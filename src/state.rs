@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use crate::config::PostgresVersion;
+
 /// State information for a single PostgreSQL instance
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstanceState {
@@ -10,22 +12,13 @@ pub struct InstanceState {
     pub container_id: String,
 
     /// PostgreSQL version running in the container
-    pub postgres_version: String,
-
-    /// Database name
-    pub database_name: String,
-
-    /// User name
-    pub user_name: String,
+    pub postgres_version: PostgresVersion,
 
     /// Port the container is bound to
     pub port: u16,
 
     /// Timestamp when the instance was created (Unix timestamp)
     pub created_at: u64,
-
-    /// Timestamp when the instance was last started (Unix timestamp)
-    pub last_started_at: Option<u64>,
 }
 
 /// Manages the global state file at ~/.pgx/state.json
@@ -147,13 +140,7 @@ impl StateManager {
 }
 
 impl InstanceState {
-    pub fn new(
-        container_id: String,
-        postgres_version: String,
-        database_name: String,
-        user_name: String,
-        port: u16,
-    ) -> Self {
+    pub fn new(container_id: String, postgres_version: PostgresVersion, port: u16) -> Self {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
@@ -162,11 +149,8 @@ impl InstanceState {
         InstanceState {
             container_id,
             postgres_version,
-            database_name,
-            user_name,
             port,
             created_at: now,
-            last_started_at: Some(now),
         }
     }
 }
@@ -183,9 +167,10 @@ mod tests {
 
         let state = InstanceState::new(
             "container123".to_string(),
-            "16".to_string(),
-            "mydb".to_string(),
-            "postgres".to_string(),
+            PostgresVersion {
+                major: 18,
+                minor: 1,
+            },
             5432,
         );
 

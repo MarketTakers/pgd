@@ -8,7 +8,7 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct PostgresVersion {
     pub major: u32,
     pub minor: u32,

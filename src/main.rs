@@ -2,6 +2,11 @@ mod cli;
 mod config;
 mod state;
 
+mod consts {
+    pub const USERNAME: &str = "postgres";
+    pub const DATABASE: &str = "postgres";
+}
+
 mod controller;
 
 use clap::Parser;
@@ -31,7 +36,7 @@ async fn main() -> Result<()> {
 }
 
 fn init_tracing(verbose: bool) {
-    use tracing_subscriber::{fmt, prelude::*};
+    
 
     tracing_subscriber::fmt::init();
 }
