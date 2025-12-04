@@ -51,8 +51,6 @@ pub enum ControlCommands {
 pub enum Commands {
     /// Create a new project, or initialize instance for existing one
     Init,
-    /// Create a new project, or initialize instance for existing one
-    Sync,
 
     /// Start the PostgreSQL container for the current project
     Instance {

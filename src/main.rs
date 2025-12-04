@@ -29,7 +29,6 @@ async fn main() -> Result<()> {
     match cli.command {
         cli::Commands::Init => controller.init_project().await?,
         cli::Commands::Instance { name, cmd } => todo!(),
-        cli::Commands::Sync => todo!(),
     }
 
     Ok(())

@@ -17,6 +17,7 @@ const VERIFY_DURATION_SECS: u64 = 10;
 pub struct Controller {
     docker: DockerController,
     project: Option<Project>,
+    #[allow(unused)]
     state: StateManager,
 }
 
@@ -114,7 +115,7 @@ impl Controller {
         for attempt in 1..=MAX_RETRIES {
             spinner.set_message(format!("Starting container (attempt {}/{})", attempt, MAX_RETRIES));
 
-            let result = self.try_starting_container(&container_id, attempt, &spinner).await;
+            let result = self.try_starting_container(&container_id, &spinner).await;
 
             match result {
                 Ok(_) => {
@@ -138,7 +139,6 @@ impl Controller {
     async fn try_starting_container(
         &self,
         container_id: &String,
-        attempt: u32,
         spinner: &indicatif::ProgressBar,
     ) -> Result<(), miette::Error> {
         match self.docker.start_container_by_id(container_id).await {

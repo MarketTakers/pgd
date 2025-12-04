@@ -39,14 +39,6 @@ fn state_file_path() -> Result<PathBuf> {
     Ok(PathBuf::from(home).join(".pgd").join("state.json"))
 }
 
-/// Get the path to the .pgd directory
-pub fn pgd_dir() -> Result<PathBuf> {
-    let home = std::env::var("HOME")
-        .into_diagnostic()
-        .wrap_err("Failed to get HOME environment variable")?;
-
-    Ok(PathBuf::from(home).join(".pgd"))
-}
 
 impl StateManager {
     /// Load the state manager from disk, or create a new one if it doesn't exist
@@ -100,11 +92,6 @@ impl StateManager {
         Ok(())
     }
 
-    /// Get the state for a specific project
-    pub fn get(&self, project_name: &str) -> Option<&InstanceState> {
-        self.instances.get(project_name)
-    }
-
     /// Get mutable state for a specific project
     pub fn get_mut(&mut self, project_name: &str) -> Option<&mut InstanceState> {
         self.instances.get_mut(project_name)
@@ -115,27 +102,9 @@ impl StateManager {
         self.instances.insert(project_name, state);
     }
 
-    /// Update the state for a specific project, creating it if it doesn't exist
-    pub fn update<F>(&mut self, project_name: &str, updater: F) -> Result<()>
-    where
-        F: FnOnce(&mut InstanceState),
-    {
-        if let Some(state) = self.instances.get_mut(project_name) {
-            updater(state);
-            Ok(())
-        } else {
-            miette::bail!("No state found for project: {}", project_name)
-        }
-    }
-
     /// Remove the state for a specific project
     pub fn remove(&mut self, project_name: &str) -> Option<InstanceState> {
         self.instances.remove(project_name)
-    }
-
-    /// Get all instances
-    pub fn all_instances(&self) -> &HashMap<String, InstanceState> {
-        &self.instances
     }
 }
 
@@ -152,37 +121,5 @@ impl InstanceState {
             port,
             created_at: now,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_state_manager_operations() {
-        let mut manager = StateManager {
-            instances: HashMap::new(),
-        };
-
-        let state = InstanceState::new(
-            "container123".to_string(),
-            PostgresVersion {
-                major: 18,
-                minor: 1,
-            },
-            5432,
-        );
-
-        manager.set("my-project".to_string(), state);
-
-        assert!(manager.get("my-project").is_some());
-        assert_eq!(
-            manager.get("my-project").unwrap().container_id,
-            "container123"
-        );
-
-        manager.remove("my-project");
-        assert!(manager.get("my-project").is_none());
     }
 }
