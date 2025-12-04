@@ -1,7 +1,10 @@
 [package]
 name = "pgd"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2024"
+description = "CLI to manage postgres instances for local development"
+repository = "https://github.com/MarketTakers/pgd"
+license = "MIT"
 
 [dependencies]
 bollard = "0.19.4"
