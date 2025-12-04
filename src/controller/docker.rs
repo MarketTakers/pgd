@@ -9,6 +9,7 @@ use bollard::{
     },
     secret::ContainerCreateBody,
 };
+use colored::Colorize;
 use indicatif::MultiProgress;
 use miette::{Context, IntoDiagnostic, Result};
 use tracing::info;
@@ -58,11 +59,11 @@ impl DockerController {
 
         let multi = MultiProgress::new();
 
-        println!("Downloading {image}");
+        println!("{} {}", "Downloading".cyan(), image.yellow());
 
         download::perform_download(multi, download_progress).await?;
 
-        println!("Download complete!");
+        println!("{}", "Download complete!".green().bold());
 
         Ok(())
     }

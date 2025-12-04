@@ -1,5 +1,9 @@
+use std::time::Duration;
+
 use miette::{bail, miette};
 
+use colored::Colorize;
+use comfy_table::{Attribute, Cell, Color, ContentArrangement, Table, presets::UTF8_FULL};
 use miette::Result;
 
 use crate::{
@@ -12,7 +16,7 @@ mod docker;
 mod utils;
 
 const MAX_RETRIES: u32 = 10;
-const VERIFY_DURATION_SECS: u64 = 10;
+const VERIFY_DURATION_SECS: u64 = 5;
 
 pub struct Controller {
     docker: DockerController,
@@ -35,7 +39,7 @@ impl Controller {
             return self.reconcile(project).await;
         }
 
-        println!("Initializing new pgd project...");
+        println!("{}", "Initializing new pgd project...".cyan());
 
         let mut versions = self.docker.available_versions().await?;
         versions.sort();
@@ -50,15 +54,48 @@ impl Controller {
         };
         let project = Project::new(config)?;
 
-        println!("Created pgd.toml in {}", project.path.display());
-        println!("  Project: {}", project.name);
-        println!("  PostgreSQL version: {}", project.config.version);
-        println!("  Port: {}", project.config.port);
-        println!("  Password: {}", "*".repeat(project.config.password.len()));
+        println!(
+            "\n{} {}\n",
+            "Created pgd.toml in",
+            project.path.display().to_string().bright_white().bold()
+        );
+
+        let mut table = Table::new();
+        table
+            .load_preset(UTF8_FULL)
+            .set_content_arrangement(ContentArrangement::Dynamic)
+            .set_style(comfy_table::TableComponent::MiddleIntersections, ' ')
+            .set_header(vec![
+                Cell::new("Instance Configuration").add_attribute(Attribute::Bold),
+            ]);
+
+        use comfy_table::TableComponent::*;
+        table.set_style(TopLeftCorner, '╭');
+        table.set_style(TopRightCorner, '╮');
+        table.set_style(BottomLeftCorner, '╰');
+        table.set_style(BottomRightCorner, '╯');
+        table.add_row(vec![
+            Cell::new("Project").fg(Color::White),
+            Cell::new(&project.name).add_attribute(Attribute::Bold),
+        ]);
+        table.add_row(vec![
+            Cell::new("PostgreSQL Version").fg(Color::White),
+            Cell::new(project.config.version.to_string()).add_attribute(Attribute::Bold),
+        ]);
+        table.add_row(vec![
+            Cell::new("Port").fg(Color::White),
+            Cell::new(project.config.port.to_string()).add_attribute(Attribute::Bold),
+        ]);
+        table.add_row(vec![
+            Cell::new("Password").fg(Color::White),
+            Cell::new("*".repeat(project.config.password.len())).fg(Color::DarkGrey),
+        ]);
+
+        println!("{table}");
 
         self.reconcile(&project).await?;
 
-        println!("\nProject initialized successfully!");
+        println!("\n{}", "✓ Project initialized successfully!".green().bold());
 
         Ok(())
     }
@@ -98,32 +135,45 @@ impl Controller {
             .is_container_running_by_id(&container_id)
             .await?
         {
-            println!("Container is already running");
+            println!("{}", "Container is already running".white());
             return Ok(());
         }
 
         use indicatif::{ProgressBar, ProgressStyle};
 
         let spinner = ProgressBar::new_spinner();
+        spinner.enable_steady_tick(Duration::from_millis(100));
         spinner.set_style(
             ProgressStyle::default_spinner()
-                .template("{spinner:.green} {msg}")
+                .template("{spinner:.cyan} {msg}")
                 .unwrap(),
         );
         spinner.set_message("Starting container...");
 
         for attempt in 1..=MAX_RETRIES {
-            spinner.set_message(format!("Starting container (attempt {}/{})", attempt, MAX_RETRIES));
+            spinner.set_message(format!(
+                "Starting container (attempt {}/{})",
+                attempt, MAX_RETRIES
+            ));
 
             let result = self.try_starting_container(&container_id, &spinner).await;
 
             match result {
                 Ok(_) => {
-                    spinner.finish_with_message("Container started successfully");
+                    spinner.finish_with_message(format!(
+                        "{}",
+                        "Container started successfully".green().bold()
+                    ));
                     return Ok(());
                 }
                 Err(err) => {
-                    spinner.set_message(format!("Attempt {}/{} failed: {}", attempt, MAX_RETRIES, err));
+                    spinner.set_message(format!(
+                        "{} {}/{} failed: {}",
+                        "Attempt".yellow(),
+                        attempt,
+                        MAX_RETRIES,
+                        err
+                    ));
                 }
             }
 
@@ -132,7 +182,7 @@ impl Controller {
             }
         }
 
-        spinner.finish_with_message("Failed to start container");
+        spinner.finish_with_message(format!("{}", "Failed to start container".red()));
         miette::bail!("Failed to start container after {} attempts", MAX_RETRIES)
     }
 
@@ -144,18 +194,19 @@ impl Controller {
         match self.docker.start_container_by_id(container_id).await {
             Ok(_) => {
                 spinner.set_message(format!(
-                    "Verifying container is running ({}s)...",
+                    "{} ({}s)...",
+                    "Verifying container is running".cyan(),
                     VERIFY_DURATION_SECS
                 ));
 
                 for i in 0..VERIFY_DURATION_SECS {
                     spinner.set_message(format!(
-                        "Verifying container stability ({}/{}s)",
+                        "{} ({}/{}s)",
+                        "Verifying container stability".cyan(),
                         i + 1,
                         VERIFY_DURATION_SECS
                     ));
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                    spinner.tick();
                 }
 
                 if self.docker.is_container_running_by_id(container_id).await? {
@@ -175,7 +226,11 @@ impl Controller {
         project: &Project,
         state: &mut StateManager,
     ) -> Result<String, miette::Error> {
-        println!("Creating container {}...", project.container_name());
+        println!(
+            "{} {}",
+            "Creating container".cyan(),
+            project.container_name().yellow()
+        );
         let id = self
             .docker
             .create_postgres_container(
@@ -185,7 +240,7 @@ impl Controller {
                 project.config.port,
             )
             .await?;
-        println!("Container created successfully");
+        println!("{}", "Container created successfully".green());
         state.set(
             project.name.clone(),
             crate::state::InstanceState::new(
