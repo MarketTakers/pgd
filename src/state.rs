@@ -21,7 +21,7 @@ pub struct InstanceState {
     pub created_at: u64,
 }
 
-/// Manages the global state file at ~/.pgx/state.json
+/// Manages the global state file at ~/.pgd/state.json
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StateManager {
     /// Map of project name to instance state
@@ -29,23 +29,23 @@ pub struct StateManager {
     instances: HashMap<String, InstanceState>,
 }
 
-/// Get the path to the state file (~/.pgx/state.json)
+/// Get the path to the state file (~/.pgd/state.json)
 
 fn state_file_path() -> Result<PathBuf> {
     let home = std::env::var("HOME")
         .into_diagnostic()
         .wrap_err("Failed to get HOME environment variable")?;
 
-    Ok(PathBuf::from(home).join(".pgx").join("state.json"))
+    Ok(PathBuf::from(home).join(".pgd").join("state.json"))
 }
 
-/// Get the path to the .pgx directory
-pub fn pgx_dir() -> Result<PathBuf> {
+/// Get the path to the .pgd directory
+pub fn pgd_dir() -> Result<PathBuf> {
     let home = std::env::var("HOME")
         .into_diagnostic()
         .wrap_err("Failed to get HOME environment variable")?;
 
-    Ok(PathBuf::from(home).join(".pgx"))
+    Ok(PathBuf::from(home).join(".pgd"))
 }
 
 impl StateManager {
@@ -58,7 +58,7 @@ impl StateManager {
             if let Some(parent) = state_path.parent() {
                 std::fs::create_dir_all(parent)
                     .into_diagnostic()
-                    .wrap_err("Failed to create .pgx directory")?;
+                    .wrap_err("Failed to create .pgd directory")?;
             }
 
             // Return empty state
@@ -86,7 +86,7 @@ impl StateManager {
         if let Some(parent) = state_path.parent() {
             std::fs::create_dir_all(parent)
                 .into_diagnostic()
-                .wrap_err("Failed to create .pgx directory")?;
+                .wrap_err("Failed to create .pgd directory")?;
         }
 
         let content = serde_json::to_string_pretty(self)

@@ -34,7 +34,7 @@ impl DockerController {
         let docker = Docker::connect_with_local_defaults()
     .into_diagnostic()
     .wrap_err(
-        "Failed to connect to Docker! pgx required Docker installed. Make sure it's running.",
+        "Failed to connect to Docker! pgd required Docker installed. Make sure it's running.",
     )?;
 
         info!("docker.created");
@@ -156,7 +156,7 @@ impl DockerController {
         };
 
         let mut labels = HashMap::new();
-        labels.insert("pgx.postgres.version".to_string(), version.to_string());
+        labels.insert("pgd.postgres.version".to_string(), version.to_string());
 
         let config = ContainerCreateBody {
             image: Some(image),
@@ -255,8 +255,8 @@ impl DockerController {
             .ok_or_else(|| miette!("Container has no labels"))?;
 
         let version_str = labels
-            .get("pgx.postgres.version")
-            .ok_or_else(|| miette!("Container missing pgx.postgres.version label"))?;
+            .get("pgd.postgres.version")
+            .ok_or_else(|| miette!("Container missing pgd.postgres.version label"))?;
 
         PostgresVersion::from_str(version_str)
             .map_err(|_| miette!("Invalid version in label: {}", version_str))

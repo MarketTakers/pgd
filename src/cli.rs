@@ -7,7 +7,7 @@ const STYLES: styling::Styles = styling::Styles::styled()
     .placeholder(styling::AnsiColor::Cyan.on_default());
 
 #[derive(Parser)]
-#[command(name = "pgx")]
+#[command(name = "pgd")]
 #[command(about = "Project-scoped PostgreSQL instance manager", long_about = None)]
 #[command(version)]
 #[command(styles = STYLES)]

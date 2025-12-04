@@ -35,12 +35,12 @@ impl Display for PostgresVersion {
     }
 }
 
-const PROJECT_FILENAME: &str = "pgx.toml";
+const PROJECT_FILENAME: &str = "pgd.toml";
 
-/// Configuration stored in pgx.toml
+/// Configuration stored in pgd.toml
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PgxConfig {
+pub struct PGDConfig {
     /// PostgreSQL version to use
     #[serde_as(as = "DisplayFromStr")]
     pub version: PostgresVersion,
@@ -52,16 +52,16 @@ pub struct PgxConfig {
     pub port: u16,
 }
 
-impl PgxConfig {
+impl PGDConfig {
     pub fn load(path: impl AsRef<Path>) -> Result<Self> {
         let path = path.as_ref();
         let content = std::fs::read_to_string(path)
             .into_diagnostic()
             .wrap_err_with(|| format!("Failed to read config file: {}", path.display()))?;
 
-        let config: PgxConfig = toml::from_str(&content)
+        let config: PGDConfig = toml::from_str(&content)
             .into_diagnostic()
-            .wrap_err("Failed to parse pgx.toml")?;
+            .wrap_err("Failed to parse pgd.toml")?;
 
         Ok(config)
     }
@@ -85,16 +85,16 @@ pub struct Project {
     /// Project name (derived from directory name)
     pub name: String,
 
-    /// Path to the project directory containing pgx.toml
+    /// Path to the project directory containing pgd.toml
     pub path: PathBuf,
 
-    pub config: PgxConfig,
+    pub config: PGDConfig,
 }
 
 impl Project {
     pub fn container_name(&self) -> String {
         let container_name = format!(
-            "pgx-{}-{}",
+            "pgd-{}-{}",
             self.name,
             self.config.version.to_string().replace('.', "_")
         );
@@ -110,7 +110,7 @@ impl Project {
             return Ok(None);
         }
 
-        let config = PgxConfig::load(&config_path)?;
+        let config = PGDConfig::load(&config_path)?;
         let name = Self::extract_project_name(&project_path)?;
 
         Ok(Some(Project {
@@ -120,7 +120,7 @@ impl Project {
         }))
     }
 
-    pub fn new(config: PgxConfig) -> Result<Self> {
+    pub fn new(config: PGDConfig) -> Result<Self> {
         let project_path = get_project_path()?;
         let name = Self::extract_project_name(&project_path)?;
 
@@ -143,9 +143,9 @@ impl Project {
             .ok_or_else(|| miette::miette!("Failed to extract project name from path"))
     }
 
-    /// Get the path to the pgx.toml file
+    /// Get the path to the pgd.toml file
     pub fn config_path(&self) -> PathBuf {
-        self.path.join("pgx.toml")
+        self.path.join("pgd.toml")
     }
 
     /// Save the current configuration

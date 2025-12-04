@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
     init_tracing(cli.verbose);
 
-    info!("pgx.start");
+    info!("pgd.start");
     let controller = Controller::new().await?;
 
     match cli.command {

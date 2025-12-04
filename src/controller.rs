@@ -3,7 +3,7 @@ use miette::{bail, miette};
 use miette::Result;
 
 use crate::{
-    config::{PgxConfig, PostgresVersion, Project},
+    config::{PGDConfig, PostgresVersion, Project},
     controller::docker::DockerController,
     state::{InstanceState, StateManager},
 };
@@ -34,7 +34,7 @@ impl Controller {
             return self.reconcile(project).await;
         }
 
-        println!("Initializing new pgx project...");
+        println!("Initializing new pgd project...");
 
         let mut versions = self.docker.available_versions().await?;
         versions.sort();
@@ -42,14 +42,14 @@ impl Controller {
             .last()
             .ok_or(miette!("expected to have at least one version"))?;
 
-        let config = PgxConfig {
+        let config = PGDConfig {
             version: *latest_version,
             password: utils::generate_password(),
             port: utils::find_available_port()?,
         };
         let project = Project::new(config)?;
 
-        println!("Created pgx.toml in {}", project.path.display());
+        println!("Created pgd.toml in {}", project.path.display());
         println!("  Project: {}", project.name);
         println!("  PostgreSQL version: {}", project.config.version);
         println!("  Port: {}", project.config.port);

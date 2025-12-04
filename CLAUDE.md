@@ -4,27 +4,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`pgx` is a CLI tool for managing project-scoped PostgreSQL instances running in Docker containers. Each project gets its own isolated Postgres instance, managed through a `pgx.toml` configuration file.
+`pgd` is a CLI tool for managing project-scoped PostgreSQL instances running in Docker containers. Each project gets its own isolated Postgres instance, managed through a `pgd.toml` configuration file.
 
 ## Core Architecture
 
 ### Project-Oriented Design
 
-- Each project has a `pgx.toml` file at its root that defines the Postgres configuration
-- The project name is derived from the directory containing `pgx.toml`
+- Each project has a `pgd.toml` file at its root that defines the Postgres configuration
+- The project name is derived from the directory containing `pgd.toml`
 - Each project gets its own Docker container
 - State is tracked separately per instance to detect configuration drift
 
 ### Configuration Management
 
-The `pgx.toml` file stores:
+The `pgd.toml` file stores:
 - `postgres_version`: PostgreSQL version to use
 - `database_name`: Name of the database
 - `user_name`: Database user
 - `password`: Database password
 - `port`: Host port to bind (auto-selected from available ports)
 
-Values are auto-populated during `pgx init` with sensible defaults or random values where appropriate.
+Values are auto-populated during `pgd init` with sensible defaults or random values where appropriate.
 
 ### State Tracking
 
@@ -36,7 +36,7 @@ The tool maintains separate state for each instance to detect configuration drif
 ## Key Dependencies
 
 - **clap** (with derive feature): CLI argument parsing and command structure
-- **toml**: Parsing and serializing `pgx.toml` configuration files
+- **toml**: Parsing and serializing `pgd.toml` configuration files
 - **bollard**: Docker daemon interaction for container lifecycle management
 - **tokio** (with full feature set): Async runtime for Docker operations
 - **tracing** + **tracing-subscriber**: Structured logging throughout the application
@@ -80,15 +80,15 @@ cargo fmt -- --check  # Check without modifying
 
 The CLI follows this pattern:
 ```
-pgx <command> [options]
+pgd <command> [options]
 ```
 
 Key commands to implement:
-- `pgx init`: Create pgx.toml with auto-populated configuration
-- `pgx start`: Start the Postgres container for current project
-- `pgx stop`: Stop the running container
-- `pgx status`: Show instance status and detect drift
-- `pgx destroy`: Remove container and clean up
+- `pgd init`: Create pgd.toml with auto-populated configuration
+- `pgd start`: Start the Postgres container for current project
+- `pgd stop`: Stop the running container
+- `pgd status`: Show instance status and detect drift
+- `pgd destroy`: Remove container and clean up
 
 ## Implementation Notes
 
