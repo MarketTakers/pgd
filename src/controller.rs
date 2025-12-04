@@ -8,13 +8,13 @@ use bollard::{
     errors::Error,
     query_parameters::{
         CreateContainerOptions, CreateImageOptions, InspectContainerOptions, ListImagesOptions,
-        ListImagesOptionsBuilder, SearchImagesOptions, StartContainerOptions, StopContainerOptions,
+        StartContainerOptions, StopContainerOptions,
     },
-    secret::{ContainerConfig, ContainerCreateBody, CreateImageInfo},
+    secret::{ContainerCreateBody, CreateImageInfo},
 };
 use futures::{Stream, StreamExt, TryStreamExt};
 use indicatif::{MultiProgress, ProgressBar, ProgressState, ProgressStyle};
-use miette::{Context, IntoDiagnostic, Result, diagnostic};
+use miette::{Context, IntoDiagnostic, Result};
 use tracing::info;
 
 use crate::{
@@ -38,7 +38,7 @@ const DEFAULT_POSTGRES_PORT: u16 = 5432;
 const PORT_SEARCH_RANGE: u16 = 100;
 
 fn format_image(ver: &PostgresVersion) -> String {
-    format!("{DOCKERHUB_POSTGRES}:{}", ver.to_string())
+    format!("{DOCKERHUB_POSTGRES}:{}", ver)
 }
 
 fn find_available_port() -> Result<u16> {
@@ -60,9 +60,7 @@ fn find_available_port() -> Result<u16> {
 fn new_download_pb(multi: &MultiProgress, layer_id: &str) -> ProgressBar {
     let pb = multi.add(ProgressBar::new(0));
     pb.set_style(
-        ProgressStyle::with_template(&format!(
-            "{{spinner:.green}} [{{elapsed_precise}}] {{msg}} [{{wide_bar:.cyan/blue}}] {{bytes}}/{{total_bytes}} ({{eta}})"
-        ))
+        ProgressStyle::with_template(&"{spinner:.green} [{elapsed_precise}] {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})".to_string())
         .unwrap()
         .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
             write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()
@@ -399,16 +397,15 @@ const DATABASE: &str = "postgres";
 
 const PASSWORD_LENGTH: usize = 16;
 pub fn generate_password() -> String {
-    let password = (&mut rand::rng())
+    (&mut rand::rng())
         .sample_iter(Alphanumeric)
         .take(PASSWORD_LENGTH)
         .map(|b| b as char)
-        .collect();
-    password
+        .collect()
 }
 
 const MAX_RETRIES: u32 = 10;
-const VERIFY_DURATION_SECS: u64 = 5;
+const VERIFY_DURATION_SECS: u64 = 10;
 
 pub struct Controller {
     pub docker: DockerController,
@@ -473,7 +470,7 @@ impl Controller {
         let instance_state = state.get_mut(&project.name);
 
         let container_id = match instance_state {
-            Some(instance) => match self.ensure_container_exists(&instance).await? {
+            Some(instance) => match self.ensure_container_exists(instance).await? {
                 Some(id) => id,
                 None => self.update_project_container(project, &mut state).await?,
             },
@@ -493,7 +490,6 @@ impl Controller {
             .is_container_running_by_id(&container_id)
             .await?
         {
-            println!("Container is already running");
             return Ok(());
         }
 
@@ -503,7 +499,7 @@ impl Controller {
             let result = self.try_starting_container(&container_id, attempt).await;
 
             match result {
-                Ok(_) => break,
+                Ok(_) => return Ok(()),
                 Err(err) => println!("Error: {:#?}", err),
             }
 
@@ -520,31 +516,29 @@ impl Controller {
         container_id: &String,
         attempt: u32,
     ) -> Result<(), miette::Error> {
-        Ok(
-            match self.docker.start_container_by_id(container_id).await {
-                Ok(_) => {
-                    tokio::time::sleep(tokio::time::Duration::from_secs(VERIFY_DURATION_SECS))
-                        .await;
+        match self.docker.start_container_by_id(container_id).await {
+            Ok(_) => {
+                tokio::time::sleep(tokio::time::Duration::from_secs(VERIFY_DURATION_SECS)).await;
 
-                    if self.docker.is_container_running_by_id(container_id).await? {
-                        println!("Container started successfully and verified running");
+                if self.docker.is_container_running_by_id(container_id).await? {
+                    println!("Container started successfully and verified running");
 
-                        return Ok(());
-                    } else {
-                        println!(
-                            "Container stopped unexpectedly after start (attempt {}/{})",
-                            attempt, MAX_RETRIES
-                        );
-                    }
-                }
-                Err(e) => {
+                    return Ok(());
+                } else {
                     println!(
-                        "Failed to start container (attempt {}/{}): {}",
-                        attempt, MAX_RETRIES, e
+                        "Container stopped unexpectedly after start (attempt {}/{})",
+                        attempt, MAX_RETRIES
                     );
                 }
-            },
-        )
+            }
+            Err(e) => {
+                println!(
+                    "Failed to start container (attempt {}/{}): {}",
+                    attempt, MAX_RETRIES, e
+                );
+            }
+        };
+        Ok(())
     }
 
     async fn update_project_container(
@@ -596,7 +590,7 @@ impl Controller {
         _container_id: &String,
         container_version: PostgresVersion,
     ) -> Result<(), miette::Error> {
-        Ok(if container_version != project.config.version {
+        let _: () = if container_version != project.config.version {
             let needs_upgrade = container_version < project.config.version;
 
             if needs_upgrade {
@@ -627,6 +621,7 @@ impl Controller {
                     project.config.version
                 );
             }
-        })
+        };
+        Ok(())
     }
 }

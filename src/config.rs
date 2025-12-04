@@ -35,7 +35,7 @@ impl Display for PostgresVersion {
     }
 }
 
-const PROJECT_FILENAME: &'static str = "pgx.toml";
+const PROJECT_FILENAME: &str = "pgx.toml";
 
 /// Configuration stored in pgx.toml
 #[serde_as]

@@ -14,12 +14,12 @@ use crate::controller::Controller;
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("{}", include_str!("./banner.txt"));
-    let controller = Controller::new().await?;
 
     let cli = Cli::parse();
     init_tracing(cli.verbose);
 
     info!("pgx.start");
+    let controller = Controller::new().await?;
 
     match cli.command {
         cli::Commands::Init => controller.init_project().await?,
@@ -33,7 +33,5 @@ async fn main() -> Result<()> {
 fn init_tracing(verbose: bool) {
     use tracing_subscriber::{fmt, prelude::*};
 
-    tracing_subscriber::registry()
-        .with(fmt::layer().with_target(false).with_level(true))
-        .init();
+    tracing_subscriber::fmt::init();
 }
