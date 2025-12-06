@@ -1,6 +1,6 @@
 [package]
 name = "pgd"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 description = "CLI to manage postgres instances for local development"
 repository = "https://github.com/MarketTakers/pgd"
