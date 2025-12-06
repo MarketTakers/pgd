@@ -9,8 +9,10 @@ license = "MIT"
 [dependencies]
 bollard = "0.19.4"
 clap = { version = "4.5.53", features = ["derive"] }
+cliclack = "0.3.7"
 colored = "3.0.0"
 comfy-table = "7.2.1"
+dsn = "1.2.1"
 futures = "0.3.31"
 indicatif = { version = "0.18.3", features = ["improved_unicode"] }
 miette = { version = "7.6.0", features = ["fancy"] }

@@ -1,19 +1,18 @@
 use std::time::Duration;
 
-use miette::{Diagnostic, bail, miette};
+use miette::{Diagnostic, bail};
 
 use colored::Colorize;
-use comfy_table::{Attribute, Cell, Color, ContentArrangement, Table, presets::UTF8_FULL};
 use miette::Result;
 use thiserror::Error;
 
 use crate::{
-    config::{PGDConfig, PostgresVersion, Project},
+    config::{PostgresVersion, Project},
     controller::{
         Context,
-        docker::{self, DockerController},
+        docker::{self},
     },
-    state::{InstanceState, StateManager},
+    state::InstanceState,
 };
 
 const MAX_RETRIES: usize = 10;

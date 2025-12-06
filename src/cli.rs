@@ -36,13 +36,19 @@ pub enum ControlCommands {
     /// Restart postgres instance
     Restart,
     /// (WARNING!) Destroy postgres instance
-    Destroy,
+    Destroy { accept: bool },
+    /// (WARNING!) Destruct database
+    Wipe { accept: bool },
+
     /// Status of instance
     Status,
     /// View logs produced by postgres
     Logs { follow: bool },
     /// (Sensitive) get connection details
-    Connection { format: ConnectionFormat },
+    Connection {
+        #[arg(short, long, default_value = "dsn")]
+        format: ConnectionFormat,
+    },
 }
 
 #[derive(Subcommand)]

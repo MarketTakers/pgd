@@ -1,6 +1,6 @@
 use miette::{Context, IntoDiagnostic, Result};
 use serde::{Deserialize, Serialize};
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 

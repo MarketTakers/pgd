@@ -1,14 +1,14 @@
-use std::time::Duration;
-
-use miette::{Diagnostic, bail, miette};
+use dsn::DSN;
+use miette::miette;
 
 use colored::Colorize;
 use comfy_table::{Attribute, Cell, Color, ContentArrangement, Table, presets::UTF8_FULL};
 use miette::Result;
-use thiserror::Error;
 
 use crate::{
-    config::{PGDConfig, PostgresVersion, Project},
+    cli::ConnectionFormat,
+    config::{PGDConfig, Project},
+    consts::{DATABASE, USERNAME},
     controller::{docker::DockerController, reconciler::Reconciler},
     state::{InstanceState, StateManager},
 };
@@ -26,6 +26,16 @@ pub struct Context {
 }
 
 impl Context {
+    pub fn require_instance(&self) -> Result<&InstanceState> {
+        self.instance.as_ref().ok_or(miette!("This command requires instance. Either initiliaze a project, or pass -I with instance name"))
+    }
+
+    pub fn require_project(&self) -> Result<&Project> {
+        self.project.as_ref().ok_or(miette!(
+            "This command requires project. Please, initiliaze a project."
+        ))
+    }
+
     pub async fn new(instance_override: Option<String>) -> Result<Self> {
         let project = Project::load()?;
         let state = StateManager::new()?;
@@ -53,6 +63,59 @@ pub struct Controller {
 impl Controller {
     pub fn new(ctx: Context) -> Self {
         Self { ctx }
+    }
+
+    pub async fn show_connection(&self, format: ConnectionFormat) -> Result<()> {
+        let project = self.ctx.require_project()?;
+        let reconciler = Reconciler { ctx: &self.ctx };
+
+        reconciler.reconcile(project).await?;
+
+        match format {
+            ConnectionFormat::DSN => {
+                let dsn = DSN::builder()
+                    .driver("postgres")
+                    .username(USERNAME)
+                    .password(project.config.password.clone())
+                    .host("127.0.0.1")
+                    .port(project.config.port)
+                    .database(DATABASE)
+                    .build();
+                println!("{}", dsn.to_string());
+            }
+            ConnectionFormat::Human => {
+                let mut table = create_ui_table("Instance");
+                table.add_row(vec![
+                    Cell::new("Project").fg(Color::White),
+                    Cell::new(&project.name).add_attribute(Attribute::Bold),
+                ]);
+                table.add_row(vec![
+                    Cell::new("PostgreSQL Version").fg(Color::White),
+                    Cell::new(project.config.version.to_string()).add_attribute(Attribute::Bold),
+                ]);
+                table.add_row(vec![
+                    Cell::new("Host").fg(Color::White),
+                    Cell::new("127.0.0.1").add_attribute(Attribute::Bold),
+                ]);
+
+                table.add_row(vec![
+                    Cell::new("Port").fg(Color::White),
+                    Cell::new(project.config.port.to_string()).add_attribute(Attribute::Bold),
+                ]);
+                table.add_row(vec![
+                    Cell::new("Username").fg(Color::White),
+                    Cell::new(USERNAME).add_attribute(Attribute::Bold),
+                ]);
+
+                table.add_row(vec![
+                    Cell::new("Password").fg(Color::White),
+                    Cell::new(project.config.password.clone()).fg(Color::DarkGrey),
+                ]);
+                println!("{}", table);
+            }
+        }
+
+        Ok(())
     }
 
     pub async fn init_project(&self) -> Result<()> {
@@ -83,20 +146,7 @@ impl Controller {
             project.path.display().to_string().bright_white().bold()
         );
 
-        let mut table = Table::new();
-        table
-            .load_preset(UTF8_FULL)
-            .set_content_arrangement(ContentArrangement::Dynamic)
-            .set_style(comfy_table::TableComponent::MiddleIntersections, ' ')
-            .set_header(vec![
-                Cell::new("Instance Configuration").add_attribute(Attribute::Bold),
-            ]);
-
-        use comfy_table::TableComponent::*;
-        table.set_style(TopLeftCorner, '╭');
-        table.set_style(TopRightCorner, '╮');
-        table.set_style(BottomLeftCorner, '╰');
-        table.set_style(BottomRightCorner, '╯');
+        let mut table = create_ui_table("Project Configuration");
         table.add_row(vec![
             Cell::new("Project").fg(Color::White),
             Cell::new(&project.name).add_attribute(Attribute::Bold),
@@ -122,4 +172,20 @@ impl Controller {
 
         Ok(())
     }
+}
+
+fn create_ui_table(header: &'static str) -> Table {
+    let mut table = Table::new();
+    table
+        .load_preset(UTF8_FULL)
+        .set_content_arrangement(ContentArrangement::Dynamic)
+        .set_style(comfy_table::TableComponent::MiddleIntersections, ' ')
+        .set_header(vec![Cell::new(header).add_attribute(Attribute::Bold)]);
+
+    use comfy_table::TableComponent::*;
+    table.set_style(TopLeftCorner, '╭');
+    table.set_style(TopRightCorner, '╮');
+    table.set_style(BottomLeftCorner, '╰');
+    table.set_style(BottomRightCorner, '╯');
+    table
 }
