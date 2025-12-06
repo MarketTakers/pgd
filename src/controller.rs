@@ -3,6 +3,7 @@ use miette::miette;
 
 use colored::Colorize;
 use comfy_table::{Attribute, Cell, Color, ContentArrangement, Table, presets::UTF8_FULL};
+use futures::TryStreamExt;
 use miette::Result;
 
 use crate::{
@@ -65,6 +66,24 @@ impl Controller {
         Self { ctx }
     }
 
+    pub async fn logs(&self, follow: bool) -> Result<()> {
+        let instance = self.ctx.require_instance()?;
+
+        let mut logs = self
+            .ctx
+            .docker
+            .stream_logs(&instance.container_id, follow)
+            .await;
+
+        while let Some(log) = logs.try_next().await? {
+            let bytes = log.into_bytes();
+            let line = String::from_utf8_lossy(bytes.as_ref());
+            print!("{line}");
+        }
+
+        Ok(())
+    }
+
     pub async fn show_connection(&self, format: ConnectionFormat) -> Result<()> {
         let project = self.ctx.require_project()?;
         let reconciler = Reconciler { ctx: &self.ctx };
@@ -84,34 +103,7 @@ impl Controller {
                 println!("{}", dsn.to_string());
             }
             ConnectionFormat::Human => {
-                let mut table = create_ui_table("Instance");
-                table.add_row(vec![
-                    Cell::new("Project").fg(Color::White),
-                    Cell::new(&project.name).add_attribute(Attribute::Bold),
-                ]);
-                table.add_row(vec![
-                    Cell::new("PostgreSQL Version").fg(Color::White),
-                    Cell::new(project.config.version.to_string()).add_attribute(Attribute::Bold),
-                ]);
-                table.add_row(vec![
-                    Cell::new("Host").fg(Color::White),
-                    Cell::new("127.0.0.1").add_attribute(Attribute::Bold),
-                ]);
-
-                table.add_row(vec![
-                    Cell::new("Port").fg(Color::White),
-                    Cell::new(project.config.port.to_string()).add_attribute(Attribute::Bold),
-                ]);
-                table.add_row(vec![
-                    Cell::new("Username").fg(Color::White),
-                    Cell::new(USERNAME).add_attribute(Attribute::Bold),
-                ]);
-
-                table.add_row(vec![
-                    Cell::new("Password").fg(Color::White),
-                    Cell::new(project.config.password.clone()).fg(Color::DarkGrey),
-                ]);
-                println!("{}", table);
+                format_conn_human(project);
             }
         }
 
@@ -172,6 +164,37 @@ impl Controller {
 
         Ok(())
     }
+}
+
+fn format_conn_human(project: &Project) {
+    let mut table = create_ui_table("Instance");
+    table.add_row(vec![
+        Cell::new("Project").fg(Color::White),
+        Cell::new(&project.name).add_attribute(Attribute::Bold),
+    ]);
+    table.add_row(vec![
+        Cell::new("PostgreSQL Version").fg(Color::White),
+        Cell::new(project.config.version.to_string()).add_attribute(Attribute::Bold),
+    ]);
+    table.add_row(vec![
+        Cell::new("Host").fg(Color::White),
+        Cell::new("127.0.0.1").add_attribute(Attribute::Bold),
+    ]);
+
+    table.add_row(vec![
+        Cell::new("Port").fg(Color::White),
+        Cell::new(project.config.port.to_string()).add_attribute(Attribute::Bold),
+    ]);
+    table.add_row(vec![
+        Cell::new("Username").fg(Color::White),
+        Cell::new(USERNAME).add_attribute(Attribute::Bold),
+    ]);
+
+    table.add_row(vec![
+        Cell::new("Password").fg(Color::White),
+        Cell::new(project.config.password.clone()).fg(Color::DarkGrey),
+    ]);
+    println!("{}", table);
 }
 
 fn create_ui_table(header: &'static str) -> Table {

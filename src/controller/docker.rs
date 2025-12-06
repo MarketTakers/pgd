@@ -4,6 +4,7 @@ use thiserror::Error;
 
 use bollard::{
     Docker,
+    container::LogOutput,
     query_parameters::{
         CreateContainerOptions, CreateImageOptions, InspectContainerOptions, ListImagesOptions,
         LogsOptions, StartContainerOptions, StopContainerOptions,
@@ -11,7 +12,7 @@ use bollard::{
     secret::ContainerCreateBody,
 };
 use colored::Colorize;
-use futures::StreamExt;
+use futures::{Stream, StreamExt};
 use indicatif::MultiProgress;
 use miette::{Context, IntoDiagnostic, Result};
 use tracing::info;
@@ -270,7 +271,11 @@ impl DockerController {
             .map_err(|_| miette!("Invalid version in label: {}", version_str))
     }
 
-    pub async fn stream_logs(&self, container_id: &str, follow: bool) -> Result<()> {
+    pub async fn stream_logs(
+        &self,
+        container_id: &str,
+        follow: bool,
+    ) -> impl Stream<Item = Result<LogOutput>> {
         let options = Some(LogsOptions {
             follow,
             stdout: true,
@@ -278,22 +283,11 @@ impl DockerController {
             ..Default::default()
         });
 
-        let mut logs = self.daemon.logs(container_id, options);
+        let logs = self
+            .daemon
+            .logs(container_id, options)
+            .map(|k| k.into_diagnostic().wrap_err("Failed streaming logs"));
 
-        while let Some(entry) = logs.next().await {
-            match entry {
-                Ok(output) => {
-                    print!("{output}");
-                    std::io::stdout().flush().ok();
-                }
-                Err(err) => {
-                    return Err(err)
-                        .into_diagnostic()
-                        .wrap_err("Failed to stream container logs");
-                }
-            }
-        }
-
-        Ok(())
+        logs
     }
 }

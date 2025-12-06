@@ -35,7 +35,10 @@ async fn main() -> Result<()> {
             ControlCommands::Stop => {}
             ControlCommands::Restart => {}
             ControlCommands::Destroy { accept } => {}
-            ControlCommands::Logs { follow } => todo!(),
+            ControlCommands::Logs { follow } => {
+                let ctx = Context::new(name).await?;
+                Controller::new(ctx).logs(follow).await?;
+            }
             ControlCommands::Status => {}
             // can't override an instance for this command, because password is in config
             ControlCommands::Connection { format } => {

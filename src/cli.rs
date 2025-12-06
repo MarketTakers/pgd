@@ -43,7 +43,10 @@ pub enum ControlCommands {
     /// Status of instance
     Status,
     /// View logs produced by postgres
-    Logs { follow: bool },
+    Logs {
+        #[arg(short, long, default_value = "false")]
+        follow: bool,
+    },
     /// (Sensitive) get connection details
     Connection {
         #[arg(short, long, default_value = "dsn")]
