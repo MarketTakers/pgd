@@ -48,7 +48,7 @@ pub enum ControlCommands {
         follow: bool,
     },
     /// (Sensitive) get connection details
-    Connection {
+    Conn {
         #[arg(short, long, default_value = "dsn")]
         format: ConnectionFormat,
     },

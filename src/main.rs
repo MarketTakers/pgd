@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
             }
             ControlCommands::Status => {}
             // can't override an instance for this command, because password is in config
-            ControlCommands::Connection { format } => {
+            ControlCommands::Conn { format } => {
                 let ctx = Context::new(None).await?;
                 Controller::new(ctx).show_connection(format).await?;
             }
