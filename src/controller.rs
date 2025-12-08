@@ -122,7 +122,7 @@ impl Controller {
         let config = PGDConfig {
             version: *latest_version,
             password: utils::generate_password(),
-            port: utils::find_available_port()?,
+            port: utils::find_available_port(&self.ctx.state)?,
         };
         let project = Project::new(config)?;
 
