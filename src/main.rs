@@ -6,10 +6,13 @@ mod consts;
 
 mod controller;
 
+use std::env::args;
+
 use clap::Parser;
+use clap_verbosity_flag::Verbosity;
 use cli::Cli;
 use miette::Result;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::{
     cli::ControlCommands,
@@ -19,9 +22,9 @@ use crate::{
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
-    init_tracing(cli.verbose);
+    init_tracing(cli.verbosity);
 
-    info!("pgd.start");
+    debug!("pgd.start");
 
     match cli.command {
         cli::Commands::Init => {
@@ -50,6 +53,10 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn init_tracing(_verbose: bool) {
-    tracing_subscriber::fmt::init();
+fn init_tracing(verbosity: Verbosity) {
+    tracing_subscriber::fmt()
+        .with_max_level(verbosity)
+        .without_time()
+        .with_target(false)
+        .init();
 }

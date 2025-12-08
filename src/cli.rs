@@ -15,8 +15,8 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    #[arg(short, long, global = true)]
-    pub verbose: bool,
+    #[command(flatten)]
+    pub verbosity: clap_verbosity_flag::Verbosity,
 }
 
 #[derive(Clone, clap::ValueEnum)]

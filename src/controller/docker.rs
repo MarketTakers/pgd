@@ -15,7 +15,7 @@ use colored::Colorize;
 use futures::{Stream, StreamExt};
 use indicatif::MultiProgress;
 use miette::{Context, IntoDiagnostic, Result};
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::{
     config::PostgresVersion,
@@ -46,7 +46,7 @@ impl DockerController {
         "Failed to connect to Docker! pgd required Docker installed. Make sure it's running.",
     )?;
 
-        info!("docker.created");
+        debug!("Connected to docker!");
 
         docker
             .list_images(Some(ListImagesOptions::default()))
@@ -283,10 +283,7 @@ impl DockerController {
             ..Default::default()
         });
 
-        
-
-        self
-            .daemon
+        self.daemon
             .logs(container_id, options)
             .map(|k| k.into_diagnostic().wrap_err("Failed streaming logs"))
     }

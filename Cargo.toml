@@ -9,6 +9,7 @@ license = "MIT"
 [dependencies]
 bollard = "0.19.4"
 clap = { version = "4.5.53", features = ["derive"] }
+clap-verbosity-flag = { version = "3.0.4", features = ["tracing"] }
 cliclack = "0.3.7"
 colored = "3.0.0"
 comfy-table = "7.2.1"

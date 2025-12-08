@@ -5,6 +5,7 @@ use miette::{Diagnostic, bail};
 use colored::Colorize;
 use miette::Result;
 use thiserror::Error;
+use tracing::info;
 
 use crate::{
     config::{PostgresVersion, Project},
@@ -66,7 +67,7 @@ impl<'a> Reconciler<'a> {
             .is_container_running_by_id(&container_id)
             .await?
         {
-            println!("{}", "Container is already running".white());
+            info!("Container is already running");
             return Ok(());
         }
 
@@ -158,7 +159,7 @@ impl<'a> Reconciler<'a> {
     }
 
     async fn update_project_container(&self, project: &Project) -> Result<String, miette::Error> {
-        println!(
+        info!(
             "{} {}",
             "Creating container".cyan(),
             project.container_name().yellow()
@@ -173,7 +174,7 @@ impl<'a> Reconciler<'a> {
                 project.config.port,
             )
             .await?;
-        println!("{}", "Container created successfully".green());
+        info!("{}", "Container created successfully".green());
         self.ctx.state.set(
             project.name.clone(),
             crate::state::InstanceState::new(
