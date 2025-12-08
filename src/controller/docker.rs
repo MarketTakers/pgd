@@ -1,5 +1,5 @@
 use miette::{Diagnostic, miette};
-use std::{io::Write, str::FromStr};
+use std::str::FromStr;
 use thiserror::Error;
 
 use bollard::{
@@ -283,11 +283,11 @@ impl DockerController {
             ..Default::default()
         });
 
-        let logs = self
+        
+
+        self
             .daemon
             .logs(container_id, options)
-            .map(|k| k.into_diagnostic().wrap_err("Failed streaming logs"));
-
-        logs
+            .map(|k| k.into_diagnostic().wrap_err("Failed streaming logs"))
     }
 }

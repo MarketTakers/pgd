@@ -8,7 +8,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressState, ProgressStyle};
 fn new_download_pb(multi: &MultiProgress, layer_id: &str) -> ProgressBar {
     let pb = multi.add(ProgressBar::new(0));
     pb.set_style(
-ProgressStyle::with_template(&"{spinner:.green} [{elapsed_precise}] {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})".to_string())
+ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
 .unwrap()
 .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
     write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()

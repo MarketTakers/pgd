@@ -146,7 +146,7 @@ impl<'a> Reconciler<'a> {
                     .is_container_running_by_id(container_id)
                     .await?
                 {
-                    return Ok(());
+                    Ok(())
                 } else {
                     miette::bail!("Container stopped unexpectedly after start");
                 }

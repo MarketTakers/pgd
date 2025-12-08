@@ -127,8 +127,7 @@ impl Controller {
         let project = Project::new(config)?;
 
         println!(
-            "\n{} {}\n",
-            "Created pgd.toml in",
+            "\nCreated pgd.toml in {}\n",
             project.path.display().to_string().bright_white().bold()
         );
 
