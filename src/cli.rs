@@ -8,7 +8,7 @@ const STYLES: styling::Styles = styling::Styles::styled()
 
 #[derive(Parser)]
 #[command(name = "pgd")]
-#[command(about = "Project-scoped PostgreSQL instance manager", long_about = None)]
+#[command(about = "Project-scoped PostgreSQL instance manager", long_about = include_str!("./banner.txt"))]
 #[command(version)]
 #[command(styles = STYLES)]
 pub struct Cli {

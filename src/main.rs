@@ -18,8 +18,6 @@ use crate::{
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("{}", include_str!("./banner.txt"));
-
     let cli = Cli::parse();
     init_tracing(cli.verbose);
 

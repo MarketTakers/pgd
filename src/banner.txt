@@ -5,3 +5,5 @@
 ▀  ▐▌ ▐▌    
     ▝▀▜▌    
    ▐▙▄▞▘    
+
+Project-scoped PostgreSQL instance manager
