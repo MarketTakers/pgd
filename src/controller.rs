@@ -1,4 +1,3 @@
-use dsn::DSN;
 use miette::miette;
 
 use colored::Colorize;
@@ -92,15 +91,10 @@ impl Controller {
 
         match format {
             ConnectionFormat::DSN => {
-                let dsn = DSN::builder()
-                    .driver("postgres")
-                    .username(USERNAME)
-                    .password(project.config.password.clone())
-                    .host("127.0.0.1")
-                    .port(project.config.port)
-                    .database(DATABASE)
-                    .build();
-                println!("{}", dsn.to_string());
+                println!(
+                    "postgres://{}:{}@127.0.0.1:{}/{}",
+                    USERNAME, project.config.password, project.config.port, DATABASE
+                );
             }
             ConnectionFormat::Human => {
                 format_conn_human(project);

@@ -410,15 +410,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dsn"
-version = "1.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a68ec86c8ab056c40c4d3f6a543ad0ad6a251d7d01dac251feed242aa44e754a"
-dependencies = [
- "percent-encoding",
-]
-
-[[package]]
 name = "dyn-clone"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1103,7 +1094,6 @@ dependencies = [
  "cliclack",
  "colored",
  "comfy-table",
- "dsn",
  "futures",
  "indicatif",
  "miette",
