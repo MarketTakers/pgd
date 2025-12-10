@@ -120,7 +120,7 @@ impl<'a> Reconciler<'a> {
 
     async fn try_starting_container(
         &self,
-        container_id: &String,
+        container_id: &str,
         spinner: &indicatif::ProgressBar,
     ) -> Result<(), miette::Error> {
         match self.ctx.docker.start_container_by_id(container_id).await {
@@ -175,7 +175,7 @@ impl<'a> Reconciler<'a> {
             )
             .await?;
         info!("{}", "Container created successfully".green());
-        self.ctx.state.set(
+        self.ctx.state.upsert(
             project.name.clone(),
             crate::state::InstanceState::new(
                 id.clone(),

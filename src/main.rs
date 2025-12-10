@@ -6,13 +6,11 @@ mod consts;
 
 mod controller;
 
-use std::env::args;
-
 use clap::Parser;
 use clap_verbosity_flag::Verbosity;
 use cli::Cli;
 use miette::Result;
-use tracing::{debug, info};
+use tracing::debug;
 
 use crate::{
     cli::ControlCommands,
@@ -26,27 +24,27 @@ async fn main() -> Result<()> {
 
     debug!("pgd.start");
 
+    macro_rules! do_cmd {
+        ($name:expr, $method:ident $(, $arg:expr)*) => {{
+            let ctx = Context::new($name).await?;
+            Controller::new(ctx).$method($($arg),*).await?;
+        }};
+    }
+
     match cli.command {
         cli::Commands::Init => {
-            let ctx = Context::new(None).await?;
-            Controller::new(ctx).init_project().await?;
+            do_cmd!(None, init_project);
         }
         cli::Commands::Instance { name, cmd } => match cmd {
-            ControlCommands::Start => {}
-            ControlCommands::Stop => {}
-            ControlCommands::Restart => {}
-            ControlCommands::Destroy { accept } => {}
-            ControlCommands::Logs { follow } => {
-                let ctx = Context::new(name).await?;
-                Controller::new(ctx).logs(follow).await?;
-            }
-            ControlCommands::Status => {}
+            ControlCommands::Start => do_cmd!(name, start),
+            ControlCommands::Stop => do_cmd!(name, stop),
+            ControlCommands::Restart => do_cmd!(name, restart),
+            ControlCommands::Destroy { force } => do_cmd!(name, destroy, force),
+            ControlCommands::Logs { follow } => do_cmd!(name, logs, follow),
+            ControlCommands::Status => do_cmd!(name, status),
             // can't override an instance for this command, because password is in config
-            ControlCommands::Conn { format } => {
-                let ctx = Context::new(None).await?;
-                Controller::new(ctx).show_connection(format).await?;
-            }
-            ControlCommands::Wipe { accept } => {}
+            ControlCommands::Conn { format } => do_cmd!(None, show_connection, format),
+            ControlCommands::Wipe { force } => do_cmd!(name, wipe, force),
         },
     }
 

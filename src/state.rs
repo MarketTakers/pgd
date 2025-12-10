@@ -84,8 +84,12 @@ impl StateManager {
         self.0.borrow().instances.get(project_name).cloned()
     }
 
-    pub fn set(&self, project_name: String, state: InstanceState) {
+    pub fn upsert(&self, project_name: String, state: InstanceState) {
         self.0.borrow_mut().instances.insert(project_name, state);
+    }
+
+    pub fn remove(&self, project_name: &str) -> Option<InstanceState> {
+        self.0.borrow_mut().instances.remove(project_name)
     }
 
     pub fn get_highest_used_port(&self) -> Option<u16> {

@@ -1,12 +1,13 @@
-```
+```text
 ▄▄▄▄      ▐▌
 █   █     ▐▌
 █▄▄▄▀  ▗▞▀▜▌
 █   ▗▄▖▝▚▄▟▌
-▀  ▐▌ ▐▌    
-    ▝▀▜▌    
-   ▐▙▄▞▘  
-```  
+▀  ▐▌ ▐▌
+    ▝▀▜▌
+   ▐▙▄▞▘
+```
+
 ---
 
 > Inspired by the great [Gel](https://github.com/geldata/gel-cli) CLI. We will miss it.
@@ -17,7 +18,7 @@ Project-scoped PostgreSQL instance manager for local development.
 
 Tired of juggling PostgreSQL versions across projects? Wrestling with port conflicts? Spending half your morning helping new teammates get their local database running? Well, say no more!
 
-`pgd` gives each of your projects its own containerized PostgreSQL instance with zero configuration headaches. 
+`pgd` gives each of your projects its own containerized PostgreSQL instance with zero configuration headaches.
 Isolate, upgrade and nuke -- everything safely.
 
 ## Why Use pgd?
@@ -31,6 +32,7 @@ Isolate, upgrade and nuke -- everything safely.
 **Let the tool handle the boring stuff.** `pgd` manages ports, volumes and versions for you
 
 ## Requirements
+
 - Docker daemon running locally
 - Rust toolchain (for installation from source)
 
@@ -70,6 +72,15 @@ Creates a `pgd.toml` file in the current directory with auto-populated configura
 All instance commands follow the pattern `pgd instance <command>`:
 
 ```bash
+# Start the PostgreSQL instance
+pgd instance start
+
+# Stop the PostgreSQL instance
+pgd instance stop
+
+# Restart the PostgreSQL instance
+pgd instance restart
+
 # Check instance status and configuration drift
 pgd instance status
 
@@ -77,7 +88,7 @@ pgd instance status
 pgd instance logs
 
 # Follow logs in real-time
-pgd instance logs --f
+pgd instance logs --follow
 
 # Get connection details
 pgd instance conn
@@ -92,14 +103,22 @@ pgd instance conn --format human
 ### Destructive Operations
 
 ```bash
-# Remove the container
+# Stop and remove the container
 pgd instance destroy
 
 # Wipe all database data
 pgd instance wipe
 ```
 
-These commands require confirmation to prevent accidental data loss.
+These commands require confirmation to prevent accidental data loss. You can bypass confirmation with the `force` flag, but use with caution:
+
+```bash
+# Force destroy without confirmation
+pgd instance destroy --force
+
+# Force wipe without confirmation
+pgd instance wipe --force
+```
 
 ### Global Options
 
@@ -119,17 +138,18 @@ pgd --help
 `pgd` manages Docker containers with PostgreSQL images. Each project's container is named deterministically based on the project directory name, ensuring no duplicates.
 
 The tool tracks state separately for each instance to detect configuration drift, such as:
+
 - Version mismatches between `pgd.toml` and the running container
 - Port conflicts or changes
 - Container state inconsistencies
 
-When drift is detected, `pgd instance status` will show warnings and correct things.
+When drift is detected, `pgd instance status` will show warnings and you can use `pgd instance start` to reconcile the state.
 
 ## Project Structure
 
 Your project tree after initialization:
 
-```
+```text
 my-project/
 ├── pgd.toml          # Database configuration
 ├── src/              # Your application code
