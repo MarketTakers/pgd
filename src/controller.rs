@@ -105,28 +105,15 @@ impl Controller {
     }
 
     pub async fn start(&self) -> Result<()> {
-        let instance = self.ctx.require_instance()?;
         let project = self.ctx.require_project()?;
-
-        if self
-            .ctx
-            .docker
-            .is_container_running_by_id(&instance.container_id)
-            .await?
-        {
-            println!("{}", "Container is already running".yellow());
-            return Ok(());
-        }
+        let reconciler = Reconciler { ctx: &self.ctx };
 
         println!("{}", "Starting container...".cyan());
-        self.ctx
-            .docker
-            .start_container_by_id(&instance.container_id)
-            .await?;
+        reconciler.reconcile(project).await?;
         println!(
             "{} {} {}",
             "✓".green().bold(),
-            "Container".green(),
+            "Container started".green(),
             project.container_name().yellow()
         );
 
@@ -163,14 +150,11 @@ impl Controller {
     }
 
     pub async fn restart(&self) -> Result<()> {
-        let instance = self.ctx.require_instance()?;
         let project = self.ctx.require_project()?;
+        let reconciler = Reconciler { ctx: &self.ctx };
 
         println!("{}", "Restarting container...".cyan());
-        self.ctx
-            .docker
-            .restart_container(&instance.container_id, 10)
-            .await?;
+        reconciler.reconcile(project).await?;
         println!(
             "{} {} {}",
             "✓".green().bold(),
