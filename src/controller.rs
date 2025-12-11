@@ -150,10 +150,25 @@ impl Controller {
     }
 
     pub async fn restart(&self) -> Result<()> {
+        let instance = self.ctx.require_instance()?;
         let project = self.ctx.require_project()?;
         let reconciler = Reconciler { ctx: &self.ctx };
 
         println!("{}", "Restarting container...".cyan());
+
+        // Stop container first if it's running, otherwise reconciler won't do anything
+        if self
+            .ctx
+            .docker
+            .is_container_running_by_id(&instance.container_id)
+            .await?
+        {
+            self.ctx
+                .docker
+                .stop_container(&instance.container_id, 10)
+                .await?;
+        }
+
         reconciler.reconcile(project).await?;
         println!(
             "{} {} {}",
