@@ -287,4 +287,85 @@ impl DockerController {
             .logs(container_id, options)
             .map(|k| k.into_diagnostic().wrap_err("Failed streaming logs"))
     }
+
+    pub async fn remove_container(&self, container_id: &str, force: bool) -> Result<()> {
+        use bollard::query_parameters::RemoveContainerOptions;
+
+        self.daemon
+            .remove_container(
+                container_id,
+                Some(RemoveContainerOptions {
+                    force,
+                    v: true, // Remove associated volumes
+                    ..Default::default()
+                }),
+            )
+            .await
+            .into_diagnostic()
+            .wrap_err("Failed to remove container")?;
+
+        Ok(())
+    }
+
+    pub async fn restart_container(&self, container_id: &str, timeout: i32) -> Result<()> {
+        use bollard::query_parameters::RestartContainerOptions;
+
+        self.daemon
+            .restart_container(
+                container_id,
+                Some(RestartContainerOptions {
+                    t: Some(timeout),
+                    signal: None,
+                }),
+            )
+            .await
+            .into_diagnostic()
+            .wrap_err("Failed to restart container")?;
+
+        Ok(())
+    }
+
+    pub async fn exec_in_container(&self, container_id: &str, cmd: Vec<&str>) -> Result<String> {
+        use bollard::container::LogOutput;
+        use bollard::exec::{CreateExecOptions, StartExecOptions};
+
+        let exec = self
+            .daemon
+            .create_exec(
+                container_id,
+                CreateExecOptions {
+                    cmd: Some(cmd),
+                    attach_stdout: Some(true),
+                    attach_stderr: Some(true),
+                    ..Default::default()
+                },
+            )
+            .await
+            .into_diagnostic()
+            .wrap_err("Failed to create exec")?;
+
+        let mut output = String::new();
+        let start_exec_result = self
+            .daemon
+            .start_exec(&exec.id, Some(StartExecOptions::default()))
+            .await
+            .into_diagnostic()?;
+
+        if let bollard::exec::StartExecResults::Attached {
+            output: mut exec_output,
+            ..
+        } = start_exec_result
+        {
+            while let Some(Ok(msg)) = exec_output.next().await {
+                match msg {
+                    LogOutput::StdOut { message } | LogOutput::StdErr { message } => {
+                        output.push_str(&String::from_utf8_lossy(&message));
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        Ok(output)
+    }
 }

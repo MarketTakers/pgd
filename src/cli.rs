@@ -22,7 +22,7 @@ pub struct Cli {
 #[derive(Clone, clap::ValueEnum)]
 pub enum ConnectionFormat {
     /// DSN Url
-    DSN,
+    Dsn,
     // Human readable format
     Human,
 }
@@ -36,9 +36,9 @@ pub enum ControlCommands {
     /// Restart postgres instance
     Restart,
     /// (WARNING!) Destroy postgres instance
-    Destroy { accept: bool },
+    Destroy { force: bool },
     /// (WARNING!) Destruct database
-    Wipe { accept: bool },
+    Wipe { force: bool },
 
     /// Status of instance
     Status,
